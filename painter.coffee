@@ -98,9 +98,6 @@ class Painter
 		@board.resetBoard(@initialPop, @gridSize)
 
 	_loop: ->
-		return if window.canvasStop or
-			window.mouseDown and window.mouseOverCanvas
-		@board.tic()
 
 		# Synchronise window.fps
 		thisFrameFPS = 1000 / ((now=new Date) - lastUpdate)
@@ -110,6 +107,11 @@ class Painter
 		window.setTimeout =>
 			@_loop()
 		, 1000/@fps
+		
+		return if window.canvasStop or
+			window.mouseDown and window.mouseOverCanvas
+		
+		@board.tic()
 
 	loop: ->
 		addFpsCounter()
