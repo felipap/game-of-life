@@ -84,7 +84,7 @@ class Painter
 			$(elm).appendTo $(".wrapper")
 		drawGrid(@canvas.grid, @gridSize)
 	
-		@board = new Board(@canvas.board, @gridSize, @initialPop)
+		@board = new window.Board(@canvas.board, @gridSize, @initialPop)
 		@dispatcher = new EventDispatcher(@board, @)
 
 	changeBoardSpecs: (obj) ->
