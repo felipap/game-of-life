@@ -205,7 +205,7 @@ class EventDispatcher
 	setBoard: (board) ->
 		@board = board
 		@canvas = board.canvas
-		
+
 		console.log "Attaching listeners to board:", #{board}
 		# Bind DOM events
 		@detectMouse()
@@ -234,14 +234,14 @@ class EventDispatcher
 	bindStopButton: ->
 		# Somewhy this is called before Bootstrap's api, and when the button is
 		# pressed, the .active class won't be set on it and vice versa.
-		# This function must return false, otherwise the eventbubble won't stop.
+		# This function must return true, otherwise the eventbubble will stop.
 
 		$("button.haltboard").click (event) =>
 			if $(event.target).hasClass('active')
-				@unstopCanvas()
+				window.canvasStop = false
 			else
-				@stopCanvas()
-			return false
+				window.canvasStop = true
+			return true
 
 	bindClearButton: ->
 		$("button.clearboard").click (event) =>
@@ -285,14 +285,6 @@ class EventDispatcher
 
 		document.querySelector(".count").innerHTML = window.stateCount
 
-	stopCanvas: =>
-		$("button.haltboard").addClass('active')
-		window.canvasStop = true
-
-	unstopCanvas: =>
-		$("button.haltboard").removeClass('active')
-		window.canvasStop = false
-
 	#### DOM Binders
 
 	detectMouse: ->
@@ -307,9 +299,11 @@ class EventDispatcher
 		$(document).keydown (event) =>
 			if event.keyCode == 32
 				if window.canvasStop
-					@unstopCanvas()
+					$("button.haltboard").removeClass('active')
+					window.canvasStop = false
 				else
-					@stopCanvas()
+					$("button.haltboard").addClass('active')
+					window.canvasStop = true
 
 	detectMousePos: ->
 		window.mouseOverCanvas = false
