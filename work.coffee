@@ -4,11 +4,11 @@
 
 ###
 
-Rules:
-	1. Any live cell with fewer than two live neighbours dies, as if caused by under-population.
-	2. Any live cell with two or three live neighbours lives on to the next generation.
-	3. Any live cell with more than three live neighbours dies, as if by overcrowding.
-	4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
+1. Any live cell with fewer than two live neighbours dies, as if caused by under-population.
+2. Any live cell with two or three live neighbours lives on to the next generation.
+3. Any live cell with more than three live neighbours dies, as if by overcrowding.
+4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
 # Add
 # fps counter
@@ -109,7 +109,7 @@ class Board
 				else
 					new GridSquare(@gridSize, {x:x, y:y}).render(@context)
 
-	tick: ->
+	tic: ->
 		# Create a copy @boardState to boardState.
 		boardState = Array(@WIDTH)
 		for x in [0...@WIDTH]
@@ -147,7 +147,7 @@ class Board
 		@render(boardState)
 		@boardState = boardState
 		if changed
-			$(@).trigger 'toc', {empty: @_isEmpty(@boardState)}
+			$(@).trigger 'toc', {empty: @_isEmptyBoard(@boardState)}
 
 	##### Internal methods
 
@@ -172,7 +172,7 @@ class Board
 			y: Math.floor Math.random()*@HEIGHT
 		}
 
-	_isEmpty: (boardState=@boardState) ->
+	_isEmptyBoard: (boardState=@boardState) ->
 		for x in [0...@WIDTH]
 			for y in [0...@HEIGHT]
 				if boardState[x][y] != @DEAD
@@ -221,7 +221,7 @@ class EventDispatcher
 		@bindClearButton()
 		@bindShowPanel()
 		@bindHideGrid()
-		@bindBuildCanvas()
+		@bindBuildBoard()
 
 	bindBoardToc: ->
 		# Binds a 'toc' event from the Board, called each time Board.tic() is executed.
@@ -229,14 +229,14 @@ class EventDispatcher
 		$(@board).bind 'toc', (event, context) =>
 			if not context.empty
 				window.stateCount += 1
-				@updateStateCount()
+				@updateStateCounter()
 
 	bindStopButton: ->
 		# Somewhy this is called before Bootstrap's api, and when the button is
 		# pressed, the .active class won't be set on it and vice versa.
 		# This function must return true, otherwise the eventbubble will stop.
-
-		$("button.haltboard").click (event) =>
+		# See https://github.com/twitter/bootstrap/issues/2380
+		$('body').on 'click', 'button.haltboard', (event) =>
 			if $(event.target).hasClass('active')
 				window.canvasStop = false
 			else
@@ -247,7 +247,7 @@ class EventDispatcher
 		$("button.clearboard").click (event) =>
 			window.stateCount = 0
 			@board.clearBoard()
-			@updateStateCount()
+			@updateStateCounter()
 
 	bindShowPanel: ->
 		$(".show-more").click (event) =>
@@ -269,8 +269,8 @@ class EventDispatcher
 			else
 				$("canvas#grid").fadeOut()		
 
-	bindBuildCanvas: ->
-		$("button.buildcanvas").click (event) =>
+	bindBuildBoard: ->
+		$("button.buildboard").click (event) =>
 			particles = $(".initial-particles").val()
 			size = $(".grid-size").val()
 			fps = $(".refresh-rate").val()
@@ -281,8 +281,7 @@ class EventDispatcher
 			
 	#### General functions (multiple callers)
 
-	updateStateCount: =>
-
+	updateStateCounter: =>
 		document.querySelector(".count").innerHTML = window.stateCount
 
 	#### DOM Binders
@@ -320,7 +319,7 @@ class EventDispatcher
 			console.log "oi2"
 			coord = @_getGridPos event
 			if not _.isEqual coord, @lastHoveredSquare
-				console.log "Click at canvas fired at", coord
+				console.log "Click on canvas fired at", coord
 				@board.toogleSquare coord
 
 	detectMouseMove: ->
@@ -385,15 +384,21 @@ class Painter
 		@dispatcher = new EventDispatcher(@)
 		@dispatcher.setBoard(@board)
 
-	loop: ->
-		console.log "Looping board:", board, "sync value", @_boardSync 
-		
-		window.setInterval =>
-			# console.log @, @board, canvasStop, mouseDown, mouseOverCanvas
-			if window.canvasStop or window.mouseDown and window.mouseOverCanvas
-				return
-			@board.tick()
+	_loop: ->
+		window.setTimeout =>
+			@_loop()
 		, 1000/@fps
+
+		# console.log @, @board, canvasStop, mouseDown, mouseOverCanvas
+		if window.canvasStop or window.mouseDown and window.mouseOverCanvas
+			return
+		console.log "tic"
+		@board.tic()
+	
+	loop: ->
+		console.log "Start looping board" # , @board, "with painter", @ 
+		@_loop()
+
 
 
 window.AnimateOnFrameRate = do ->
@@ -407,6 +412,9 @@ window.AnimateOnFrameRate = do ->
 		window.setTimeout callback, 1000/60
 
 window.onload = ->
+	# Start a painter and loop.
+
 	window.painter = new Painter(20, 100)
 	window.painter.loop()
+
 	return

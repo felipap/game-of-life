@@ -2,11 +2,11 @@
 
 /*
 
-Rules:
-	1. Any live cell with fewer than two live neighbours dies, as if caused by under-population.
-	2. Any live cell with two or three live neighbours lives on to the next generation.
-	3. Any live cell with more than three live neighbours dies, as if by overcrowding.
-	4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
+Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
+1. Any live cell with fewer than two live neighbours dies, as if caused by under-population.
+2. Any live cell with two or three live neighbours lives on to the next generation.
+3. Any live cell with more than three live neighbours dies, as if by overcrowding.
+4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
 # Add
 # fps counter
@@ -184,7 +184,7 @@ Rules:
       return _results;
     };
 
-    Board.prototype.tick = function() {
+    Board.prototype.tic = function() {
       var boardState, changed, neighbours, status, x, y, _i, _j, _k, _ref, _ref1, _ref2;
       boardState = Array(this.WIDTH);
       for (x = _i = 0, _ref = this.WIDTH; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
@@ -219,7 +219,7 @@ Rules:
       this.boardState = boardState;
       if (changed) {
         return $(this).trigger('toc', {
-          empty: this._isEmpty(this.boardState)
+          empty: this._isEmptyBoard(this.boardState)
         });
       }
     };
@@ -262,7 +262,7 @@ Rules:
       };
     };
 
-    Board.prototype._isEmpty = function(boardState) {
+    Board.prototype._isEmptyBoard = function(boardState) {
       var x, y, _i, _j, _ref, _ref1;
       if (boardState == null) {
         boardState = this.boardState;
@@ -305,11 +305,7 @@ Rules:
 
     function EventDispatcher(painter) {
       this.painter = painter;
-      this.unstopCanvas = __bind(this.unstopCanvas, this);
-
-      this.stopCanvas = __bind(this.stopCanvas, this);
-
-      this.updateStateCount = __bind(this.updateStateCount, this);
+      this.updateStateCounter = __bind(this.updateStateCounter, this);
 
       this._getGridPos = __bind(this._getGridPos, this);
 
@@ -331,7 +327,7 @@ Rules:
       this.bindClearButton();
       this.bindShowPanel();
       this.bindHideGrid();
-      return this.bindBuildCanvas();
+      return this.bindBuildBoard();
     };
 
     EventDispatcher.prototype.bindBoardToc = function() {
@@ -340,20 +336,20 @@ Rules:
       return $(this.board).bind('toc', function(event, context) {
         if (!context.empty) {
           window.stateCount += 1;
-          return _this.updateStateCount();
+          return _this.updateStateCounter();
         }
       });
     };
 
     EventDispatcher.prototype.bindStopButton = function() {
       var _this = this;
-      return $("button.haltboard").click(function(event) {
+      return $('body').on('click', 'button.haltboard', function(event) {
         if ($(event.target).hasClass('active')) {
-          _this.unstopCanvas();
+          window.canvasStop = false;
         } else {
-          _this.stopCanvas();
+          window.canvasStop = true;
         }
-        return false;
+        return true;
       });
     };
 
@@ -362,7 +358,7 @@ Rules:
       return $("button.clearboard").click(function(event) {
         window.stateCount = 0;
         _this.board.clearBoard();
-        return _this.updateStateCount();
+        return _this.updateStateCounter();
       });
     };
 
@@ -394,9 +390,9 @@ Rules:
       });
     };
 
-    EventDispatcher.prototype.bindBuildCanvas = function() {
+    EventDispatcher.prototype.bindBuildBoard = function() {
       var _this = this;
-      return $("button.buildcanvas").click(function(event) {
+      return $("button.buildboard").click(function(event) {
         var fps, particles, size;
         particles = $(".initial-particles").val();
         size = $(".grid-size").val();
@@ -407,18 +403,8 @@ Rules:
       });
     };
 
-    EventDispatcher.prototype.updateStateCount = function() {
+    EventDispatcher.prototype.updateStateCounter = function() {
       return document.querySelector(".count").innerHTML = window.stateCount;
-    };
-
-    EventDispatcher.prototype.stopCanvas = function() {
-      $("button.haltboard").addClass('active');
-      return window.canvasStop = true;
-    };
-
-    EventDispatcher.prototype.unstopCanvas = function() {
-      $("button.haltboard").removeClass('active');
-      return window.canvasStop = false;
     };
 
     EventDispatcher.prototype.detectMouse = function() {
@@ -438,9 +424,11 @@ Rules:
       return $(document).keydown(function(event) {
         if (event.keyCode === 32) {
           if (window.canvasStop) {
-            return _this.unstopCanvas();
+            $("button.haltboard").removeClass('active');
+            return window.canvasStop = false;
           } else {
-            return _this.stopCanvas();
+            $("button.haltboard").addClass('active');
+            return window.canvasStop = true;
           }
         }
       });
@@ -467,7 +455,7 @@ Rules:
         console.log("oi2");
         coord = _this._getGridPos(event);
         if (!_.isEqual(coord, _this.lastHoveredSquare)) {
-          console.log("Click at canvas fired at", coord);
+          console.log("Click on canvas fired at", coord);
           return _this.board.toogleSquare(coord);
         }
       });
@@ -568,15 +556,21 @@ Rules:
       return this.dispatcher.setBoard(this.board);
     };
 
-    Painter.prototype.loop = function() {
+    Painter.prototype._loop = function() {
       var _this = this;
-      console.log("Looping board:", board, "sync value", this._boardSync);
-      return window.setInterval(function() {
-        if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
-          return;
-        }
-        return _this.board.tick();
+      window.setTimeout(function() {
+        return _this._loop();
       }, 1000 / this.fps);
+      if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
+        return;
+      }
+      console.log("tic");
+      return this.board.tic();
+    };
+
+    Painter.prototype.loop = function() {
+      console.log("Start looping board");
+      return this._loop();
     };
 
     return Painter;
