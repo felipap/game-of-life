@@ -87,20 +87,21 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
 
     Board.prototype.ALIVE = 1;
 
-    function Board(canvas, gridSize, initPopulation) {
-      var _ref;
+    function Board(canvas, gridSize, pop) {
       this.canvas = canvas;
-      this.gridSize = gridSize != null ? gridSize : 10;
-      this.initPopulation = initPopulation != null ? initPopulation : null;
+      if (gridSize == null) {
+        gridSize = 10;
+      }
+      if (pop == null) {
+        pop = null;
+      }
       this.toogleSquare = __bind(this.toogleSquare, this);
 
       this.context = this.canvas.getContext("2d");
-      this.WIDTH = ~~(this.canvas.width / this.gridSize) + 1;
-      this.HEIGHT = ~~(this.canvas.height / this.gridSize) + 1;
-      if ((_ref = this.initPopulation) == null) {
-        this.initPopulation = this.WIDTH * this.HEIGHT * .5;
+      if (pop == null) {
+        pop = this.WIDTH * this.HEIGHT * .5;
       }
-      this.resetBoard();
+      this.resetBoard(pop, gridSize);
     }
 
     Board.prototype.initializeBoard = function() {
@@ -117,15 +118,16 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       return this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     };
 
-    Board.prototype.resetBoard = function(pop) {
-      var i, _i, _results;
-      if (pop == null) {
-        pop = this.initPopulation;
-      }
+    Board.prototype.resetBoard = function(initialPop, gridSize) {
+      var i, _i, _ref, _results;
+      this.initialPop = initialPop != null ? initialPop : this.initialPop;
+      this.gridSize = gridSize != null ? gridSize : this.gridSize;
+      this.WIDTH = ~~(this.canvas.width / this.gridSize) + 1;
+      this.HEIGHT = ~~(this.canvas.height / this.gridSize) + 1;
       this.initializeBoard();
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
       _results = [];
-      for (i = _i = 1; 1 <= pop ? _i <= pop : _i >= pop; i = 1 <= pop ? ++_i : --_i) {
+      for (i = _i = 1, _ref = this.initialPop; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
         _results.push(this.toogleSquare(this._getRandBoardPos()));
       }
       return _results;
@@ -303,8 +305,6 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
     function EventDispatcher(board, painter) {
       this.board = board;
       this.painter = painter;
-      this.updateStateCounter = __bind(this.updateStateCounter, this);
-
       this._getGridPos = __bind(this._getGridPos, this);
 
       this._getMousePos = __bind(this._getMousePos, this);
@@ -319,7 +319,7 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       this.bindBoardToc();
       this.bindStopButton();
       this.bindClearButton();
-      this.bindShowPanel();
+      this.bindShowConfigPanel();
       this.bindHideGrid();
       this.bindBuildBoard();
     }
@@ -329,8 +329,7 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       window.stateCount = 0;
       return $(this.board).bind('toc', function(event, context) {
         if (!context.empty) {
-          window.stateCount += 1;
-          return _this.updateStateCounter();
+          return _this.painter.incStateCounter();
         }
       });
     };
@@ -352,13 +351,13 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       return $("button.clearboard").click(function(event) {
         window.stateCount = 0;
         _this.board.clearBoard();
-        return _this.updateStateCounter();
+        return _this.painter.resetStateCounter();
       });
     };
 
-    EventDispatcher.prototype.bindShowPanel = function() {
+    EventDispatcher.prototype.bindShowConfigPanel = function() {
       var _this = this;
-      return $(".show-more").click(function(event) {
+      $(".show-more").click(function(event) {
         if ($('.config-panel').is(':hidden')) {
           $('.config-panel').slideDown();
           $(".show-more").find("h6").html('show less options');
@@ -371,6 +370,9 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
           return $(".show-more").find("i").removeClass("icon-circle-arrow-up").addClass("icon-circle-arrow-down");
         }
       });
+      $('[name="refresh-rate"]').val(this.painter.fps);
+      $('[name="initial-particles"]').val(this.painter.initialPop);
+      return $('[name="grid-size"]').val(this.painter.gridSize);
     };
 
     EventDispatcher.prototype.bindHideGrid = function() {
@@ -387,18 +389,12 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
     EventDispatcher.prototype.bindBuildBoard = function() {
       var _this = this;
       return $("button.buildboard").click(function(event) {
-        var fps, particles, size;
-        particles = $(".initial-particles").val();
-        size = $(".grid-size").val();
-        fps = $(".refresh-rate").val();
-        console.log(fps, particles, size);
-        delete window.painter;
-        return _this.painter.buildBoard(fps, size, particles);
+        return _this.painter.changeBoardSpecs({
+          fps: $('[name="refresh-rate"]').val(),
+          initialPop: $('[name="initial-particles"]').val(),
+          gridSize: $('[name="grid-size"]').val()
+        });
       });
-    };
-
-    EventDispatcher.prototype.updateStateCounter = function() {
-      return document.querySelector(".count").innerHTML = window.stateCount;
     };
 
     EventDispatcher.prototype.detectMouseDown = function() {
@@ -514,6 +510,16 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       return _results;
     };
 
+    Painter.prototype.incStateCounter = function() {
+      window.stateCount += 1;
+      return document.querySelector(".count").innerHTML = window.stateCount;
+    };
+
+    Painter.prototype.resetStateCounter = function() {
+      window.stateCount = 1;
+      return document.querySelector(".count").innerHTML = window.stateCount;
+    };
+
     Painter.prototype.gridSize = 10;
 
     Painter.prototype.initialPop = 1000;
@@ -535,16 +541,19 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
         $(elm).appendTo($(".wrapper"));
       }
       drawGrid(this.canvas.grid, this.gridSize);
-      this.buildBoard();
+      this.board = new Board(this.canvas.board, this.gridSize, this.initialPop);
+      this.dispatcher = new EventDispatcher(this.board, this);
     }
 
-    Painter.prototype.buildBoard = function(fps, gridSize, initialPop) {
-      this.fps = fps != null ? fps : this.fps;
-      this.gridSize = gridSize != null ? gridSize : this.gridSize;
-      this.initialPop = initialPop != null ? initialPop : this.initialPop;
-      console.log("@board", this.board);
-      this.board = new Board(this.canvas.board, this.gridSize, this.initialPop);
-      return this.dispatcher = new EventDispatcher(this.board, this);
+    Painter.prototype.changeBoardSpecs = function(obj) {
+      var _ref, _ref1, _ref2;
+      this.fps = (_ref = obj.fps) != null ? _ref : this.fps;
+      this.initialPop = (_ref1 = obj.initialPop) != null ? _ref1 : this.initialPop;
+      this.gridSize = (_ref2 = obj.gridSize) != null ? _ref2 : this.gridSize;
+      drawGrid(this.canvas.grid, this.gridSize);
+      window.stateCount = 0;
+      this.resetStateCounter();
+      return this.board.resetBoard(this.initialPop, this.gridSize);
     };
 
     Painter.prototype._loop = function() {

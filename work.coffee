@@ -55,16 +55,13 @@ class GridSquare
 class Board
 
 	boardState 	: []
-	DEAD 	: null
-	ALIVE 	: 1
+	DEAD 		: null
+	ALIVE 		: 1
 
-	constructor: (@canvas, @gridSize=10, @initPopulation=null) ->
+	constructor: (@canvas, gridSize=10, pop=null) ->
 		@context 	= @canvas.getContext "2d"
-		@WIDTH 		= ~~(@canvas.width/@gridSize)+1    
-		@HEIGHT 	= ~~(@canvas.height/@gridSize)+1
-
-		@initPopulation ?= @WIDTH*@HEIGHT*.5
-		@resetBoard()
+		pop ?= @WIDTH*@HEIGHT*.5
+		@resetBoard(pop, gridSize)
 
 	initializeBoard: ->
 		console.log "Initializing boardState #{@WIDTH} by #{@HEIGHT}"
@@ -76,10 +73,13 @@ class Board
 		@boardState = boardState
 		@context.clearRect 0, 0, @canvas.width, @canvas.height
 
-	resetBoard: (pop=@initPopulation)->
+	resetBoard: (@initialPop=@initialPop, @gridSize=@gridSize)->
+		@WIDTH 		= ~~(@canvas.width/@gridSize)+1    
+		@HEIGHT 	= ~~(@canvas.height/@gridSize)+1
+
 		@initializeBoard()
 		@context.clearRect 0, 0, @canvas.width, @canvas.height
-		@toogleSquare(@_getRandBoardPos()) for i in [1..pop]
+		@toogleSquare(@_getRandBoardPos()) for i in [1..@initialPop]
 
 	clearBoard: ->
 		@initializeBoard()
@@ -216,7 +216,7 @@ class EventDispatcher
 		@bindBoardToc()
 		@bindStopButton()
 		@bindClearButton()
-		@bindShowPanel()
+		@bindShowConfigPanel()
 		@bindHideGrid()
 		@bindBuildBoard()
 
@@ -225,8 +225,7 @@ class EventDispatcher
 		window.stateCount = 0
 		$(@board).bind 'toc', (event, context) =>
 			if not context.empty
-				window.stateCount += 1
-				@updateStateCounter()
+				@painter.incStateCounter()
 
 	bindStopButton: ->
 		# Somewhy this is called before Bootstrap's api, and when the button is
@@ -244,9 +243,9 @@ class EventDispatcher
 		$("button.clearboard").click (event) =>
 			window.stateCount = 0
 			@board.clearBoard()
-			@updateStateCounter()
+			@painter.resetStateCounter()
 
-	bindShowPanel: ->
+	bindShowConfigPanel: ->
 		$(".show-more").click (event) =>
 			if $('.config-panel').is(':hidden')
 				$('.config-panel').slideDown()
@@ -258,6 +257,9 @@ class EventDispatcher
 				$('.config-panel').slideUp()
 				$(".show-more").find("h6").html('show more options')
 				$(".show-more").find("i").removeClass("icon-circle-arrow-up").addClass("icon-circle-arrow-down")
+		$('[name="refresh-rate"]').val(@painter.fps)
+		$('[name="initial-particles"]').val(@painter.initialPop)
+		$('[name="grid-size"]').val(@painter.gridSize)
 
 	bindHideGrid: ->
 		$("button.hidegrid").click (event) =>
@@ -268,18 +270,10 @@ class EventDispatcher
 
 	bindBuildBoard: ->
 		$("button.buildboard").click (event) =>
-			particles = $(".initial-particles").val()
-			size = $(".grid-size").val()
-			fps = $(".refresh-rate").val()
-			console.log fps, particles, size
-			delete window.painter
-			@painter.buildBoard fps, size, particles
-
-			
-	###### General functions (multiple callers)
-
-	updateStateCounter: =>
-		document.querySelector(".count").innerHTML = window.stateCount
+			@painter.changeBoardSpecs
+				fps: 		$('[name="refresh-rate"]').val()
+				initialPop:	$('[name="initial-particles"]').val()
+				gridSize:	$('[name="grid-size"]').val()
 
 	###### DOM Binders
 
@@ -355,6 +349,14 @@ class Painter
 		for iline in [0...canvas.height/gridSize]
 			makeLine(context, 0, gridSize*iline, canvas.width, gridSize*iline, .1, 'grey')
 
+	incStateCounter: ->
+		window.stateCount += 1
+		document.querySelector(".count").innerHTML = window.stateCount
+
+	resetStateCounter: ->
+		window.stateCount = 1
+		document.querySelector(".count").innerHTML = window.stateCount
+
 	###### 
 
 	# Defaults
@@ -373,12 +375,20 @@ class Painter
 			elm.height 	= $(window).height() # window.innerHeight
 			$(elm).appendTo $(".wrapper")
 		drawGrid(@canvas.grid, @gridSize)
-		@buildBoard()
-
-	buildBoard: (@fps=@fps, @gridSize=@gridSize, @initialPop=@initialPop) ->
-		console.log "@board", @board
+	
 		@board = new Board(@canvas.board, @gridSize, @initialPop)
 		@dispatcher = new EventDispatcher(@board, @)
+
+	changeBoardSpecs: (obj) ->
+		@fps = obj.fps ? @fps
+		@initialPop = obj.initialPop ? @initialPop
+		@gridSize = obj.gridSize ? @gridSize
+
+		drawGrid @canvas.grid, @gridSize
+		window.stateCount = 0
+		@resetStateCounter()
+
+		@board.resetBoard(@initialPop, @gridSize)
 
 	_loop: ->
 		window.setTimeout =>
