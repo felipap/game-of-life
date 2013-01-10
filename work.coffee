@@ -11,49 +11,40 @@ Rules:
 	4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
 # Add
-# STOP WHEN MOUSE DOWN
 # fps counter
 ###
 
-`
-function rainbow(numOfSteps, step) {
-    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distiguishable vibrant markers in Google Maps and other apps.
-    // Adam Cole, 2011-Sept-14
-    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-    var r, g, b;
-    var h = step / numOfSteps;
-    var i = ~~(h * 6);
-    var f = h * 6 - i;
-    var q = 1 - f;
-    switch(i % 6){
-        case 0: r = 1, g = f, b = 0; break;
-        case 1: r = q, g = 1, b = 0; break;
-        case 2: r = 0, g = 1, b = f; break;
-        case 3: r = 0, g = q, b = 1; break;
-        case 4: r = f, g = 0, b = 1; break;
-        case 5: r = 1, g = 0, b = q; break;
-    }
-    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
-    return (c);
-}
-`
+## Change gridsquare manipulation
+
+rainbow = (numOfSteps, step) ->
+	# from http://stackoverflow.com/a/7419630/396050
+    h = step / numOfSteps;
+    i = ~~(h * 6);
+    f = h * 6 - i;
+    q = 1 - f;
+    switch i % 6
+        when 0 then r = 1; g = f; b = 0;
+        when 1 then r = q; g = 1; b = 0;
+        when 2 then r = 0; g = 1; b = f;
+        when 3 then r = 0; g = q; b = 1;
+        when 4 then r = f; g = 0; b = 1;
+        when 5 then r = 1; g = 0; b = q;
+
+    c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    return c
 
 getRandColor = ->
 	'#' + (Math.random()*0xFFFFFF<<0).toString(16)
 
+######
 
-class CanvasObject
-
-	# Nothing here.
-
-
-class GridSquare extends CanvasObject
+class GridSquare
 	
 	constructor: (@size, @c) ->
 	
 	render: (context) ->
 		# context.fillStyle = getRandColor()
-		context.fillStyle = rainbow(@c.x-@c.y, 10)
+		context.fillStyle = rainbow(@c.x+@c.y, 10)
 		context.fillRect @size*@c.x, @size*@c.y, @size, @size
 
 	clear: (context) ->
@@ -66,18 +57,13 @@ class Board
 	DEAD 	: null
 	ALIVE 	: 1
 
-	constructor: (@canvas, @size=10, pop=null) ->
+	constructor: (@canvas, @size=10, @initPopulation=null) ->
 		@context 	= @canvas.getContext "2d"
 		@WIDTH 		= ~~(@canvas.width/@size)+1    
 		@HEIGHT 	= ~~(@canvas.height/@size)+1
 
-		@initializeBoard()
-
-		pop ?= 0 #s @WIDTH*@HEIGHT*.5
-
-		@toogleSquare(@_getRandBoardPos()) for i in [1..pop]
-		# @_printBoard(@boardState)
-		# @render(@boardState)
+		@initPopulation ?= @WIDTH*@HEIGHT*.5
+		@resetBoard()
 
 	initializeBoard: ->
 		console.log "Initializing boardState #{@WIDTH} by #{@HEIGHT}"
@@ -87,8 +73,18 @@ class Board
 			for i2 in [0...@HEIGHT]
 				boardState[i][i2] = @DEAD
 		@boardState = boardState
+		@context.clearRect 0, 0, @canvas.width, @canvas.height
 
-	####
+	resetBoard: (pop=@initPopulation)->
+		@initializeBoard()
+		@context.clearRect 0, 0, @canvas.width, @canvas.height
+		@toogleSquare(@_getRandBoardPos()) for i in [1..pop]
+
+	clearBoard: ->
+		@initializeBoard()
+		@context.clearRect 0, 0, @canvas.width, @canvas.height
+
+	###### Canvas manipulation functions
 
 	addSquare: (coord) ->
 		@boardState[coord.x][coord.y] = @ALIVE
@@ -102,49 +98,35 @@ class Board
 			new GridSquare(@size, coord).render(@context)
 			@boardState[coord.x][coord.y] = @ALIVE
 
-	####
+	###### Main Engine
 
-	# render: (boardState=@boardState) ->
-	# 	@clearBoard()
-	# 	for x in [0...boardState.length]
-	# 		for y in [0...boardState[x].length] when boardState[x][y]
-	# 			new GridSquare(@size, {x:x,y:y}).render(@context)
-	# 	# console.log "toc"
-
-	render: (boardState) ->
-		# @clearBoard()
-		for x in [0...boardState.length] when not _.isEqual boardState[x], @boardState[x] # Prevent loop in non-changed strips.
-			for y in [0...boardState[x].length] when boardState[x][y] != @boardState[x][y]
-				if not boardState[x][y]
+	render: (newState) ->
+		# Toogles the squares in which newState differs from @boardState.
+		for x in [0...newState.length] when not _.isEqual newState[x], @boardState[x] # Prevent loop in non-changed strips.
+			for y in [0...newState[x].length] when newState[x][y] != @boardState[x][y]
+				if not newState[x][y]
 					new GridSquare(@size, {x:x, y:y}).clear(@context)
 				else
 					new GridSquare(@size, {x:x, y:y}).render(@context)
-		# console.log "toc"
 
 	tick: ->
-		if window.mouseDown or window.spaceDown
-			return
-		
 		# Create a copy @boardState to boardState.
 		boardState = Array(@WIDTH)
 		for x in [0...@WIDTH]
 			boardState[x] = @boardState[x].slice(0)
 
-
-		changed = false
-
 		# Make changes according to the rules
+		changed = false
 		for x in [0...@WIDTH]
 			for y in [0...@HEIGHT]
 				status = @boardState[x][y]
 				neighbours = @_countNeighbours(x, y)
-
 				switch status
 					when @DEAD
 						switch neighbours
 							# Any dead cell with exactly three live neighbours
 							# becomes a live cell, as if by reproduction.
-							when 3 #                                 5
+							when 3
 								boardState[x][y] = @ALIVE
 								changed = true
 
@@ -152,7 +134,7 @@ class Board
 						switch neighbours
 							# Any live cell with two or three live neighbours
 							# lives on to the next generation.
-							when 2, 3;
+							when 2, 3
 							else
 								# - Any live cell with fewer than two live
 								# neighbours dies, as if caused by under-population.
@@ -167,11 +149,7 @@ class Board
 		if changed
 			$(@).trigger 'toc', {empty: @_isEmpty(@boardState)}
 
-	####
-
-	clearBoard: ->
-		
-		@context.clearRect 0, 0, @canvas.width, @canvas.height
+	##### Internal methods
 
 	_countNeighbours: (x, y) ->
 		# Most basic implementation.
@@ -206,6 +184,10 @@ class EventDispatcher
 	# Listen for events and set global variables.
 	#!? Substitute all globals by an object like "eventState"
 
+	@lastHoveredSquare = null
+
+	###### Internal methods
+
 	_getMousePos: (event) =>
 		rect = @canvas.getBoundingClientRect()
 		x: event.clientX - rect.left
@@ -216,9 +198,7 @@ class EventDispatcher
 		x: ~~(coord.x/@board.size)
 		y: ~~(coord.y/@board.size)
 
-	######
-
-	@lastHoveredSquare = null
+	###### Constructor, button binders and bindBoardToc()
 
 	constructor: (@board) ->
 		@canvas = board.canvas
@@ -231,14 +211,51 @@ class EventDispatcher
 		@detectCanvasClick()
 		@detectMouseMove()
 		@bindBoardToc()
-
+		@bindStopButton()
+		@bindClearButton()
 
 	bindBoardToc: ->
+		# Binds a 'toc' event from the Board, called each time Board.tic() is executed.
 		window.stateCount = 0
-		$(@board).bind 'toc', (event, context) ->
+		$(@board).bind 'toc', (event, context) =>
 			if not context.empty
 				window.stateCount += 1
-				document.querySelector(".count").innerHTML = window.stateCount
+				@updateStateCount()
+
+	bindStopButton: ->
+		# Somewhy this is called before Bootstrap's api, and when the button is
+		# pressed, the .active class won't be set on it and vice versa.
+		# This function must return false, otherwise the eventbubble won't stop.
+
+		$("button.haltboard").click (event) =>
+			if $(event.target).hasClass('active')
+				@unstopCanvas()
+			else
+				@stopCanvas()
+			return false
+
+	bindClearButton: ->
+		$("button.clearboard").click (event) =>
+			window.stateCount = 0
+			@board.clearBoard()
+			@updateStateCount()
+
+			
+	#### General functions (multiple callers)
+
+	updateStateCount: =>
+
+		document.querySelector(".count").innerHTML = window.stateCount
+
+	stopCanvas: =>
+		$("button.haltboard").addClass('active')
+		window.canvasStop = true
+
+	unstopCanvas: =>
+		$("button.haltboard").removeClass('active')
+		window.canvasStop = false
+
+	#### DOM Binders
 
 	detectMouse: ->
 		window.msouseDown = false
@@ -248,11 +265,13 @@ class EventDispatcher
 			window.mouseDown = false
 
 	detectSpacebar: ->
-		window.spaceDown = false
+		window.canvasStop = false
 		$(document).keydown (event) =>
-			window.spaceDown = true if event.keyCode == 32
-		$(document).keyup (event) =>
-			window.spaceDown = false if event.keyCode == 32
+			if event.keyCode == 32
+				if window.canvasStop
+					@unstopCanvas()
+				else
+					@stopCanvas()
 
 	detectMousePos: ->
 		window.mouseOverCanvas = false
@@ -272,7 +291,6 @@ class EventDispatcher
 		$(@canvas).mousemove (event) =>
 			if window.mouseOverCanvas and window.mouseDown
 				coord = @_getGridPos event
-				console.log 'lasthovered', @lastHoveredSquare
 				if not _.isEqual coord, @lastHoveredSquare
 					@lastHoveredSquare = coord
 					@board.addSquare coord
@@ -280,9 +298,9 @@ class EventDispatcher
 			@lastHoveredSquare = coord
 
 
-########
-
 class Painter
+
+	###### Canvas manipulation functions
 
 	drawDot = (context, x, y, color="black") ->
 		context.strokeStyle = color
@@ -290,24 +308,24 @@ class Painter
 		context.arc x, y, 2, 0, 2*Math.PI, true
 		context.fill()
 
-	makeLine = (context, x, y, x2, y2, color="black") -> 
+	makeLine = (context, x, y, x2, y2, lineWidth=0.1, color="black") -> 
 		context.strokeStyle = color
+		context.lineWidth = lineWidth
 		context.beginPath()
 		context.moveTo x, y
 		context.lineTo x2, y2
 		context.stroke()
 	
-	_drawGrid = (canvas, size) ->
+	drawGrid = (canvas, size) ->
 		context = canvas.getContext "2d"
-		context.lineWidth = .1
 		for icol in [0...canvas.width/size]
-			makeLine(context, size*icol, 0, size*icol, canvas.height)
+			makeLine(context, size*icol, 0, size*icol, canvas.height, .1, 'grey')
 		for iline in [0...canvas.height/size]
-			makeLine(context, 0, size*iline, canvas.width, size*iline)
+			makeLine(context, 0, size*iline, canvas.width, size*iline, .1, 'grey')
 
-	#####
+	###### 
 
-	gridSize = 4
+	gridSize = 10
 
 	constructor: ->
 		@buildCanvas()
@@ -322,7 +340,7 @@ class Painter
 			elm.width 	= $(window).width() # window.innerWidth
 			elm.height 	= $(window).height() # window.innerHeight
 			$(elm).appendTo $(".wrapper")
-		_drawGrid(@canvas.grid, gridSize)
+		drawGrid(@canvas.grid, gridSize)
 
 	loop: ->
 		board = new Board(@canvas.board, gridSize)
@@ -330,6 +348,8 @@ class Painter
 		console.log "Looping board:", board
 		
 		window.setInterval =>
+			if window.mouseDown or window.canvasStop
+				return
 			board.tick()
 		, 10
 

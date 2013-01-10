@@ -3,6 +3,8 @@
 
 <head>
 	<title>A canvas Game of Life.</title>
+	<link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+
 	<style>
 
 		.wrapper {
@@ -18,41 +20,52 @@
 		}
 
 		header {
-			width: 400px;
-			position: relative;
+			-moz-user-select: none;
 			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+
+		header .panel {
+			position: relative;
 			cursor: default !important;
 			background: rgba(255, 255, 255, .6);
-			height: 100px;
-			border: 1px solid black;
-	}
+			margin: 10px;
+			padding: 10px;
+			box-shadow: 0 0 7px rgba(0, 0, 0, .4);
+			display: inline-block;
+		}
 
 	</style>
 
+	<script src="work.js"></script>
 	<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
 	<script src="https://raw.github.com/documentcloud/underscore/master/underscore-min.js"></script>
-	<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js"></script>
-	<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+	<script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js"></script>
 </head>
 
 <body>
-
-	<!-- <canvas id="grid"> -->
-	
 
 	<div class="wrapper">
 	</div>
 
 	<header>
-		<button type="button" class="btn btn-primary btn-small" data-toggle="button">Halt on Hover</button>
-		<button type="button" class="btn btn-warning btn-small">Reset Wall</button>
-		<button type="button" class="btn btn-warning" data-toggle="button">Stop</button>
-		<button type="button" class="btn btn-warning">goto step x</button>
+		<div class="panel">
+			<h4 style="margin-top: 0; display: inline">
+				Conway's Game of Life <h6 style="display: inline">by <a href="http://twitter.com/f03lipe"</a>f03lipe</a></h6>
+			</h4>
+			<h5>State Count: <span class="count">1</span></h5>
+			<button class="btn btn-small btn-danger clearboard"><strong>Clear Board</strong></button>
+			<button class="btn btn-small btn-warning haltboard" data-toggle="button"><strong>Stop Canvas</strong></button>
+			<button class="btn btn-small btn-info"><strong>Goto Step x</strong></button>
+			<br>
+			<button class="btn-link btn-small" onClick="">show more options</button>
+		</div>
 
-		<div class="count"></div>
-
+		<a classhref="https://github.com/f03lipe/game-of-life">
+			<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
 	</header>
+	
 
-	<script src="work.js"></script>
+
 </body>
 </html>

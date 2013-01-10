@@ -9,55 +9,60 @@ Rules:
 	4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
 # Add
-# STOP WHEN MOUSE DOWN
 # fps counter
 */
 
 
 (function() {
-  
-function rainbow(numOfSteps, step) {
-    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distiguishable vibrant markers in Google Maps and other apps.
-    // Adam Cole, 2011-Sept-14
-    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-    var r, g, b;
-    var h = step / numOfSteps;
-    var i = ~~(h * 6);
-    var f = h * 6 - i;
-    var q = 1 - f;
-    switch(i % 6){
-        case 0: r = 1, g = f, b = 0; break;
-        case 1: r = q, g = 1, b = 0; break;
-        case 2: r = 0, g = 1, b = f; break;
-        case 3: r = 0, g = q, b = 1; break;
-        case 4: r = f, g = 0, b = 1; break;
-        case 5: r = 1, g = 0, b = q; break;
-    }
-    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
-    return (c);
-}
-;
-
-  var Board, CanvasObject, EventDispatcher, GridSquare, Painter, getRandColor,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  var Board, EventDispatcher, GridSquare, Painter, getRandColor, rainbow,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  rainbow = function(numOfSteps, step) {
+    var b, c, f, g, h, i, q, r;
+    h = step / numOfSteps;
+    i = ~~(h * 6);
+    f = h * 6 - i;
+    q = 1 - f;
+    switch (i % 6) {
+      case 0:
+        r = 1;
+        g = f;
+        b = 0;
+        break;
+      case 1:
+        r = q;
+        g = 1;
+        b = 0;
+        break;
+      case 2:
+        r = 0;
+        g = 1;
+        b = f;
+        break;
+      case 3:
+        r = 0;
+        g = q;
+        b = 1;
+        break;
+      case 4:
+        r = f;
+        g = 0;
+        b = 1;
+        break;
+      case 5:
+        r = 1;
+        g = 0;
+        b = q;
+    }
+    c = "#" + ("00" + (~~(r * 255)).toString(16)).slice(-2) + ("00" + (~~(g * 255)).toString(16)).slice(-2) + ("00" + (~~(b * 255)).toString(16)).slice(-2);
+    return c;
+  };
 
   getRandColor = function() {
     return '#' + (Math.random() * 0xFFFFFF << 0).toString(16);
   };
 
-  CanvasObject = (function() {
-
-    function CanvasObject() {}
-
-    return CanvasObject;
-
-  })();
-
-  GridSquare = (function(_super) {
-
-    __extends(GridSquare, _super);
+  GridSquare = (function() {
 
     function GridSquare(size, c) {
       this.size = size;
@@ -65,7 +70,7 @@ function rainbow(numOfSteps, step) {
     }
 
     GridSquare.prototype.render = function(context) {
-      context.fillStyle = rainbow(this.c.x - this.c.y, 10);
+      context.fillStyle = rainbow(this.c.x + this.c.y, 10);
       return context.fillRect(this.size * this.c.x, this.size * this.c.y, this.size, this.size);
     };
 
@@ -75,7 +80,7 @@ function rainbow(numOfSteps, step) {
 
     return GridSquare;
 
-  })(CanvasObject);
+  })();
 
   Board = (function() {
 
@@ -85,25 +90,20 @@ function rainbow(numOfSteps, step) {
 
     Board.prototype.ALIVE = 1;
 
-    function Board(canvas, size, pop) {
-      var i, _i;
+    function Board(canvas, size, initPopulation) {
+      var _ref;
       this.canvas = canvas;
       this.size = size != null ? size : 10;
-      if (pop == null) {
-        pop = null;
-      }
+      this.initPopulation = initPopulation != null ? initPopulation : null;
       this.toogleSquare = __bind(this.toogleSquare, this);
 
       this.context = this.canvas.getContext("2d");
       this.WIDTH = ~~(this.canvas.width / this.size) + 1;
       this.HEIGHT = ~~(this.canvas.height / this.size) + 1;
-      this.initializeBoard();
-      if (pop == null) {
-        pop = 0;
+      if ((_ref = this.initPopulation) == null) {
+        this.initPopulation = this.WIDTH * this.HEIGHT * .5;
       }
-      for (i = _i = 1; 1 <= pop ? _i <= pop : _i >= pop; i = 1 <= pop ? ++_i : --_i) {
-        this.toogleSquare(this._getRandBoardPos());
-      }
+      this.resetBoard();
     }
 
     Board.prototype.initializeBoard = function() {
@@ -116,7 +116,27 @@ function rainbow(numOfSteps, step) {
           boardState[i][i2] = this.DEAD;
         }
       }
-      return this.boardState = boardState;
+      this.boardState = boardState;
+      return this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    };
+
+    Board.prototype.resetBoard = function(pop) {
+      var i, _i, _results;
+      if (pop == null) {
+        pop = this.initPopulation;
+      }
+      this.initializeBoard();
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      _results = [];
+      for (i = _i = 1; 1 <= pop ? _i <= pop : _i >= pop; i = 1 <= pop ? ++_i : --_i) {
+        _results.push(this.toogleSquare(this._getRandBoardPos()));
+      }
+      return _results;
+    };
+
+    Board.prototype.clearBoard = function() {
+      this.initializeBoard();
+      return this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     };
 
     Board.prototype.addSquare = function(coord) {
@@ -134,17 +154,17 @@ function rainbow(numOfSteps, step) {
       }
     };
 
-    Board.prototype.render = function(boardState) {
+    Board.prototype.render = function(newState) {
       var x, y, _i, _ref, _results;
       _results = [];
-      for (x = _i = 0, _ref = boardState.length; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
-        if (!_.isEqual(boardState[x], this.boardState[x])) {
+      for (x = _i = 0, _ref = newState.length; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
+        if (!_.isEqual(newState[x], this.boardState[x])) {
           _results.push((function() {
             var _j, _ref1, _results1;
             _results1 = [];
-            for (y = _j = 0, _ref1 = boardState[x].length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; y = 0 <= _ref1 ? ++_j : --_j) {
-              if (boardState[x][y] !== this.boardState[x][y]) {
-                if (!boardState[x][y]) {
+            for (y = _j = 0, _ref1 = newState[x].length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; y = 0 <= _ref1 ? ++_j : --_j) {
+              if (newState[x][y] !== this.boardState[x][y]) {
+                if (!newState[x][y]) {
                   _results1.push(new GridSquare(this.size, {
                     x: x,
                     y: y
@@ -166,9 +186,6 @@ function rainbow(numOfSteps, step) {
 
     Board.prototype.tick = function() {
       var boardState, changed, neighbours, status, x, y, _i, _j, _k, _ref, _ref1, _ref2;
-      if (window.mouseDown || window.spaceDown) {
-        return;
-      }
       boardState = Array(this.WIDTH);
       for (x = _i = 0, _ref = this.WIDTH; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
         boardState[x] = this.boardState[x].slice(0);
@@ -205,10 +222,6 @@ function rainbow(numOfSteps, step) {
           empty: this._isEmpty(this.boardState)
         });
       }
-    };
-
-    Board.prototype.clearBoard = function() {
-      return this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     };
 
     Board.prototype._countNeighbours = function(x, y) {
@@ -270,6 +283,8 @@ function rainbow(numOfSteps, step) {
 
   EventDispatcher = (function() {
 
+    EventDispatcher.lastHoveredSquare = null;
+
     EventDispatcher.prototype._getMousePos = function(event) {
       var rect;
       rect = this.canvas.getBoundingClientRect();
@@ -288,10 +303,14 @@ function rainbow(numOfSteps, step) {
       };
     };
 
-    EventDispatcher.lastHoveredSquare = null;
-
     function EventDispatcher(board) {
       this.board = board;
+      this.unstopCanvas = __bind(this.unstopCanvas, this);
+
+      this.stopCanvas = __bind(this.stopCanvas, this);
+
+      this.updateStateCount = __bind(this.updateStateCount, this);
+
       this._getGridPos = __bind(this._getGridPos, this);
 
       this._getMousePos = __bind(this._getMousePos, this);
@@ -304,16 +323,54 @@ function rainbow(numOfSteps, step) {
       this.detectCanvasClick();
       this.detectMouseMove();
       this.bindBoardToc();
+      this.bindStopButton();
+      this.bindClearButton();
     }
 
     EventDispatcher.prototype.bindBoardToc = function() {
+      var _this = this;
       window.stateCount = 0;
       return $(this.board).bind('toc', function(event, context) {
         if (!context.empty) {
           window.stateCount += 1;
-          return document.querySelector(".count").innerHTML = window.stateCount;
+          return _this.updateStateCount();
         }
       });
+    };
+
+    EventDispatcher.prototype.bindStopButton = function() {
+      var _this = this;
+      return $("button.haltboard").click(function(event) {
+        if ($(event.target).hasClass('active')) {
+          _this.unstopCanvas();
+        } else {
+          _this.stopCanvas();
+        }
+        return false;
+      });
+    };
+
+    EventDispatcher.prototype.bindClearButton = function() {
+      var _this = this;
+      return $("button.clearboard").click(function(event) {
+        window.stateCount = 0;
+        _this.board.clearBoard();
+        return _this.updateStateCount();
+      });
+    };
+
+    EventDispatcher.prototype.updateStateCount = function() {
+      return document.querySelector(".count").innerHTML = window.stateCount;
+    };
+
+    EventDispatcher.prototype.stopCanvas = function() {
+      $("button.haltboard").addClass('active');
+      return window.canvasStop = true;
+    };
+
+    EventDispatcher.prototype.unstopCanvas = function() {
+      $("button.haltboard").removeClass('active');
+      return window.canvasStop = false;
     };
 
     EventDispatcher.prototype.detectMouse = function() {
@@ -329,15 +386,14 @@ function rainbow(numOfSteps, step) {
 
     EventDispatcher.prototype.detectSpacebar = function() {
       var _this = this;
-      window.spaceDown = false;
-      $(document).keydown(function(event) {
+      window.canvasStop = false;
+      return $(document).keydown(function(event) {
         if (event.keyCode === 32) {
-          return window.spaceDown = true;
-        }
-      });
-      return $(document).keyup(function(event) {
-        if (event.keyCode === 32) {
-          return window.spaceDown = false;
+          if (window.canvasStop) {
+            return _this.unstopCanvas();
+          } else {
+            return _this.stopCanvas();
+          }
         }
       });
     };
@@ -370,7 +426,6 @@ function rainbow(numOfSteps, step) {
         var coord;
         if (window.mouseOverCanvas && window.mouseDown) {
           coord = _this._getGridPos(event);
-          console.log('lasthovered', _this.lastHoveredSquare);
           if (!_.isEqual(coord, _this.lastHoveredSquare)) {
             _this.lastHoveredSquare = coord;
             _this.board.addSquare(coord);
@@ -386,7 +441,7 @@ function rainbow(numOfSteps, step) {
   })();
 
   Painter = (function() {
-    var drawDot, gridSize, makeLine, _drawGrid;
+    var drawDot, drawGrid, gridSize, makeLine;
 
     drawDot = function(context, x, y, color) {
       if (color == null) {
@@ -398,32 +453,35 @@ function rainbow(numOfSteps, step) {
       return context.fill();
     };
 
-    makeLine = function(context, x, y, x2, y2, color) {
+    makeLine = function(context, x, y, x2, y2, lineWidth, color) {
+      if (lineWidth == null) {
+        lineWidth = 0.1;
+      }
       if (color == null) {
         color = "black";
       }
       context.strokeStyle = color;
+      context.lineWidth = lineWidth;
       context.beginPath();
       context.moveTo(x, y);
       context.lineTo(x2, y2);
       return context.stroke();
     };
 
-    _drawGrid = function(canvas, size) {
+    drawGrid = function(canvas, size) {
       var context, icol, iline, _i, _j, _ref, _ref1, _results;
       context = canvas.getContext("2d");
-      context.lineWidth = .1;
       for (icol = _i = 0, _ref = canvas.width / size; 0 <= _ref ? _i < _ref : _i > _ref; icol = 0 <= _ref ? ++_i : --_i) {
-        makeLine(context, size * icol, 0, size * icol, canvas.height);
+        makeLine(context, size * icol, 0, size * icol, canvas.height, .1, 'grey');
       }
       _results = [];
       for (iline = _j = 0, _ref1 = canvas.height / size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; iline = 0 <= _ref1 ? ++_j : --_j) {
-        _results.push(makeLine(context, 0, size * iline, canvas.width, size * iline));
+        _results.push(makeLine(context, 0, size * iline, canvas.width, size * iline, .1, 'grey'));
       }
       return _results;
     };
 
-    gridSize = 4;
+    gridSize = 10;
 
     function Painter() {
       this.buildCanvas();
@@ -443,7 +501,7 @@ function rainbow(numOfSteps, step) {
         elm.height = $(window).height();
         $(elm).appendTo($(".wrapper"));
       }
-      return _drawGrid(this.canvas.grid, gridSize);
+      return drawGrid(this.canvas.grid, gridSize);
     };
 
     Painter.prototype.loop = function() {
@@ -453,6 +511,9 @@ function rainbow(numOfSteps, step) {
       new EventDispatcher(board);
       console.log("Looping board:", board);
       return window.setInterval(function() {
+        if (window.mouseDown || window.canvasStop) {
+          return;
+        }
         return board.tick();
       }, 10);
     };
