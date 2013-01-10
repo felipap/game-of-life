@@ -1,5 +1,6 @@
 
 *~
 *.swp
+*/coffee-script.min.js
 
 screens/*
