@@ -13,6 +13,8 @@
 
 #! ToDos
 # --?
+
+
 class Painter
 
 	###### Canvas manipulation functions
