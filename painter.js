@@ -113,16 +113,16 @@
     Painter.prototype._loop = function() {
       var now, thisFrameFPS,
         _this = this;
-      if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
-        return;
-      }
-      this.board.tic();
       thisFrameFPS = 1000 / ((now = new Date) - lastUpdate);
       window.fps += (thisFrameFPS - window.fps) / 1;
       lastUpdate = now * 1 - 1;
-      return window.setTimeout(function() {
+      window.setTimeout(function() {
         return _this._loop();
       }, 1000 / this.fps);
+      if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
+        return;
+      }
+      return this.board.tic();
     };
 
     Painter.prototype.loop = function() {
