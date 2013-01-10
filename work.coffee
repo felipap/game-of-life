@@ -10,9 +10,10 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
 3. Any live cell with more than three live neighbours dies, as if by overcrowding.
 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
+###
+
 # Add
 # fps counter
-###
 
 ## Change gridsquare manipulation
 
@@ -200,18 +201,14 @@ class EventDispatcher
 
 	###### Constructor, button binders and bindBoardToc()
 
-	constructor: (@painter) ->
+	constructor: (@board, @painter) ->
+		@canvas = @board.canvas
 
-	setBoard: (board) ->
-		@board = board
-		@canvas = board.canvas
-
-		console.log "Attaching listeners to board:", #{board}
+		console.log "Attaching listeners to board:", @board
 		# Bind DOM events
-		@detectMouse()
+		@detectMouseDown()
 		@detectSpacebar()
-		@detectMousePos()
-		@detectCanvasClick
+		@detectMouseOverCanvas()
 		@detectCanvasClick()
 		@detectMouseMove()
 
@@ -279,18 +276,18 @@ class EventDispatcher
 			@painter.buildBoard fps, size, particles
 
 			
-	#### General functions (multiple callers)
+	###### General functions (multiple callers)
 
 	updateStateCounter: =>
 		document.querySelector(".count").innerHTML = window.stateCount
 
-	#### DOM Binders
+	###### DOM Binders
 
-	detectMouse: ->
+	detectMouseDown: ->
 		window.mouseDown = false
-		$(document).mousedown (event) =>
+		$(@canvas).mousedown (event) =>
 			window.mouseDown = true
-		$(document).mouseup (event) =>
+		$(@canvas).mouseup (event) =>
 			window.mouseDown = false
 
 	detectSpacebar: ->
@@ -304,19 +301,17 @@ class EventDispatcher
 					$("button.haltboard").addClass('active')
 					window.canvasStop = true
 
-	detectMousePos: ->
+	detectMouseOverCanvas: ->
 		window.mouseOverCanvas = false
 		$(@canvas).mouseover (event) ->
+			console.log "entetr"
 			window.mouseOverCanvas = true
 		$(@canvas).mouseout (event) ->
+			console.log "leave"
 			window.mouseOuverCanvas = false
 
 	detectCanvasClick: ->
 		$(@canvas).mousedown (event) =>
-			console.log "oi1"
-			if not window.mouseOverCanvas
-				return
-			console.log "oi2"
 			coord = @_getGridPos event
 			if not _.isEqual coord, @lastHoveredSquare
 				console.log "Click on canvas fired at", coord
@@ -353,6 +348,8 @@ class Painter
 	
 	drawGrid = (canvas, gridSize) ->
 		context = canvas.getContext "2d"
+		# Erase any previous grids
+		context.clearRect 0, 0, canvas.width, canvas.height
 		for icol in [0...canvas.width/gridSize]
 			makeLine(context, gridSize*icol, 0, gridSize*icol, canvas.height, .1, 'grey')
 		for iline in [0...canvas.height/gridSize]
@@ -381,8 +378,7 @@ class Painter
 	buildBoard: (@fps=@fps, @gridSize=@gridSize, @initialPop=@initialPop) ->
 		console.log "@board", @board
 		@board = new Board(@canvas.board, @gridSize, @initialPop)
-		@dispatcher = new EventDispatcher(@)
-		@dispatcher.setBoard(@board)
+		@dispatcher = new EventDispatcher(@board, @)
 
 	_loop: ->
 		window.setTimeout =>

@@ -7,9 +7,6 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
 2. Any live cell with two or three live neighbours lives on to the next generation.
 3. Any live cell with more than three live neighbours dies, as if by overcrowding.
 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-
-# Add
-# fps counter
 */
 
 
@@ -303,7 +300,8 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       };
     };
 
-    function EventDispatcher(painter) {
+    function EventDispatcher(board, painter) {
+      this.board = board;
       this.painter = painter;
       this.updateStateCounter = __bind(this.updateStateCounter, this);
 
@@ -311,15 +309,11 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
 
       this._getMousePos = __bind(this._getMousePos, this);
 
-    }
-
-    EventDispatcher.prototype.setBoard = function(board) {
-      this.board = board;
-      this.canvas = board.canvas;
-      console.log("Attaching listeners to board:", this.detectMouse());
+      this.canvas = this.board.canvas;
+      console.log("Attaching listeners to board:", this.board);
+      this.detectMouseDown();
       this.detectSpacebar();
-      this.detectMousePos();
-      this.detectCanvasClick;
+      this.detectMouseOverCanvas();
       this.detectCanvasClick();
       this.detectMouseMove();
       this.bindBoardToc();
@@ -327,8 +321,8 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       this.bindClearButton();
       this.bindShowPanel();
       this.bindHideGrid();
-      return this.bindBuildBoard();
-    };
+      this.bindBuildBoard();
+    }
 
     EventDispatcher.prototype.bindBoardToc = function() {
       var _this = this;
@@ -407,13 +401,13 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       return document.querySelector(".count").innerHTML = window.stateCount;
     };
 
-    EventDispatcher.prototype.detectMouse = function() {
+    EventDispatcher.prototype.detectMouseDown = function() {
       var _this = this;
       window.mouseDown = false;
-      $(document).mousedown(function(event) {
+      $(this.canvas).mousedown(function(event) {
         return window.mouseDown = true;
       });
-      return $(document).mouseup(function(event) {
+      return $(this.canvas).mouseup(function(event) {
         return window.mouseDown = false;
       });
     };
@@ -434,12 +428,14 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       });
     };
 
-    EventDispatcher.prototype.detectMousePos = function() {
+    EventDispatcher.prototype.detectMouseOverCanvas = function() {
       window.mouseOverCanvas = false;
       $(this.canvas).mouseover(function(event) {
+        console.log("entetr");
         return window.mouseOverCanvas = true;
       });
       return $(this.canvas).mouseout(function(event) {
+        console.log("leave");
         return window.mouseOuverCanvas = false;
       });
     };
@@ -448,11 +444,6 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       var _this = this;
       return $(this.canvas).mousedown(function(event) {
         var coord;
-        console.log("oi1");
-        if (!window.mouseOverCanvas) {
-          return;
-        }
-        console.log("oi2");
         coord = _this._getGridPos(event);
         if (!_.isEqual(coord, _this.lastHoveredSquare)) {
           console.log("Click on canvas fired at", coord);
@@ -512,6 +503,7 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
     drawGrid = function(canvas, gridSize) {
       var context, icol, iline, _i, _j, _ref, _ref1, _results;
       context = canvas.getContext("2d");
+      context.clearRect(0, 0, canvas.width, canvas.height);
       for (icol = _i = 0, _ref = canvas.width / gridSize; 0 <= _ref ? _i < _ref : _i > _ref; icol = 0 <= _ref ? ++_i : --_i) {
         makeLine(context, gridSize * icol, 0, gridSize * icol, canvas.height, .1, 'grey');
       }
@@ -552,8 +544,7 @@ Rules from Wikipedia (http://en.wikipedia.org/wiki/Conway's_Game_of_Life)
       this.initialPop = initialPop != null ? initialPop : this.initialPop;
       console.log("@board", this.board);
       this.board = new Board(this.canvas.board, this.gridSize, this.initialPop);
-      this.dispatcher = new EventDispatcher(this);
-      return this.dispatcher.setBoard(this.board);
+      return this.dispatcher = new EventDispatcher(this.board, this);
     };
 
     Painter.prototype._loop = function() {
