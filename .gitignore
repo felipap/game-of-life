@@ -2,5 +2,6 @@
 *~
 *.swp
 */coffee-script.min.js
+.gitignore
 
 screens/*
