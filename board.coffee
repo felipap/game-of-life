@@ -67,7 +67,7 @@ class window.Board
 
 	addSquare: (coord) ->
 		@boardState[coord.x][coord.y] = @ALIVE
-		clearGridSquare(@context, @gridSize, coord)
+		fillGridSquare(@context, @gridSize, coord)
 
 	toogleSquare: (coord) =>
 		if @boardState[coord.x][coord.y]

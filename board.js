@@ -118,7 +118,7 @@
 
     Board.prototype.addSquare = function(coord) {
       this.boardState[coord.x][coord.y] = this.ALIVE;
-      return clearGridSquare(this.context, this.gridSize, coord);
+      return fillGridSquare(this.context, this.gridSize, coord);
     };
 
     Board.prototype.toogleSquare = function(coord) {
