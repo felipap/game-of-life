@@ -28,13 +28,41 @@
 		header .panel {
 			position: relative;
 			cursor: default !important;
-			background: rgba(255, 255, 255, .6);
+			background: rgba(255, 255, 255, .8);
 			margin: 10px;
-			padding: 10px;
+			padding: 15px;
 			box-shadow: 0 0 7px rgba(0, 0, 0, .4);
 			display: inline-block;
 		}
 
+		input[type=number] {
+			width: 60px;
+			font-size: 13px;
+			line-height: 1px;
+			padding: 1px 2px;
+		}
+
+		input:active,
+		input:focus {
+			box-shadow: none !important;
+			-webkit-box-shadow: none;
+			border: 1px solid #08C;
+		}
+
+		.config-panel {
+		}
+
+		.config-panel .control-group {
+			margin-bottom: 10x;
+		}
+
+		.config-panel .control-group label {
+			font-size: 11px;
+		}
+
+		.status {
+			margin-left: 20px;
+		}
 	</style>
 
 	<script src="work.js"></script>
@@ -45,20 +73,58 @@
 
 <body>
 
-	<div class="wrapper">
-	</div>
+	<div class="wrapper"></div>
 
 	<header>
 		<div class="panel">
 			<h4 style="margin-top: 0; display: inline">
-				Conway's Game of Life <h6 style="display: inline">by <a href="http://twitter.com/f03lipe"</a>f03lipe</a></h6>
+				Conway's Game of Life <h6 style="display: inline">by <a href="http://twitter.com/f03lipe"</a>@f03lipe</a></h6>
 			</h4>
-			<h5>State Count: <span class="count">1</span></h5>
-			<button class="btn btn-small btn-danger clearboard"><strong>Clear Board</strong></button>
-			<button class="btn btn-small btn-warning haltboard" data-toggle="button"><strong>Stop Canvas</strong></button>
-			<button class="btn btn-small btn-info"><strong>Goto Step x</strong></button>
-			<br>
-			<button class="btn-link btn-small" onClick="">show more options</button>
+
+			<div class="status">
+				<h5>State Count: <span class="badge count">1</span></h5>
+				<h5>Frames per second: <span class="badge count">1</span></h5>
+			</div>
+			
+			<div class="btn-group">
+				<button class="btn btn-small btn-danger clearboard"><strong>Clear Board</strong></button>
+				<button class="btn btn-small btn-warning haltboard" data-toggle="button"><strong>Stop Canvas</strong></button>
+				<button class="btn btn-small btn-info"><strong>Goto Step x</strong></button>
+			</div>
+
+			<button class="btn btn-link show-more" style="display: block; text-decoration: none; margin-top: 7px">
+				<i class="icon-circle-arrow-down"></i>
+				<h6 style="position: relative; top: -1px; margin: -5px 5px 0 0; display: inline-block;">show more options</h6></button>
+
+			<div class="config-panel" style="display: none">
+
+				<form class="form-horizontal" onsubmit="return false" novalidate>
+					<div class="control-group">
+						<label style="font-weight: bold; margin-top: -3px;" class="control-label">Initial Particles</label>
+						<div class="controls">
+							<input class="initial-particles" type="number" value="0" min="100"/>
+						</div>
+					</div>
+					<div class="control-group">
+						<label style="font-weight: bold; margin-top: -3px;" class="control-label">Grid Size (in pixels)</label>
+						<div class="controls">
+							<input class="grid-size" type="number" value="10" min="1"/>
+							<span style"font-size: 10px"></span>
+						</div>
+					</div>
+					<div class="control-group">
+						<label style="font-weight: bold; margin-top: -3px;" class="control-label">Refresh Rate (in seconds)</label>
+						<div class="controls">
+							<input class="refresh-rate" type="number" value="10" min="0"/>
+						</div>
+					</div>
+					<div style="margin-left: 20px">
+						<button class="btn btn-small btn-warning hidegrid" data-toggle="button">Hide Grid</button>
+						<button class="btn btn-small btn-primary buildcanvas"><strong>Build New Canvas!</strong></button>
+					</div>
+				</form>
+
+			</div>
 		</div>
 
 		<a href="https://github.com/f03lipe/game-of-life">

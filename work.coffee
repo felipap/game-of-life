@@ -57,10 +57,10 @@ class Board
 	DEAD 	: null
 	ALIVE 	: 1
 
-	constructor: (@canvas, @size=10, @initPopulation=null) ->
+	constructor: (@canvas, @gridSize=10, @initPopulation=null) ->
 		@context 	= @canvas.getContext "2d"
-		@WIDTH 		= ~~(@canvas.width/@size)+1    
-		@HEIGHT 	= ~~(@canvas.height/@size)+1
+		@WIDTH 		= ~~(@canvas.width/@gridSize)+1    
+		@HEIGHT 	= ~~(@canvas.height/@gridSize)+1
 
 		@initPopulation ?= @WIDTH*@HEIGHT*.5
 		@resetBoard()
@@ -88,14 +88,14 @@ class Board
 
 	addSquare: (coord) ->
 		@boardState[coord.x][coord.y] = @ALIVE
-		new GridSquare(@size, coord).render(@context)
+		new GridSquare(@gridSize, coord).render(@context)
 
 	toogleSquare: (coord) =>
 		if @boardState[coord.x][coord.y]
-			new GridSquare(@size, coord).clear(@context)
+			new GridSquare(@gridSize, coord).clear(@context)
 			@boardState[coord.x][coord.y] = @DEAD
 		else
-			new GridSquare(@size, coord).render(@context)
+			new GridSquare(@gridSize, coord).render(@context)
 			@boardState[coord.x][coord.y] = @ALIVE
 
 	###### Main Engine
@@ -105,9 +105,9 @@ class Board
 		for x in [0...newState.length] when not _.isEqual newState[x], @boardState[x] # Prevent loop in non-changed strips.
 			for y in [0...newState[x].length] when newState[x][y] != @boardState[x][y]
 				if not newState[x][y]
-					new GridSquare(@size, {x:x, y:y}).clear(@context)
+					new GridSquare(@gridSize, {x:x, y:y}).clear(@context)
 				else
-					new GridSquare(@size, {x:x, y:y}).render(@context)
+					new GridSquare(@gridSize, {x:x, y:y}).render(@context)
 
 	tick: ->
 		# Create a copy @boardState to boardState.
@@ -195,24 +195,33 @@ class EventDispatcher
 
 	_getGridPos: (event) =>
 		coord = @_getMousePos event
-		x: ~~(coord.x/@board.size)
-		y: ~~(coord.y/@board.size)
+		x: ~~(coord.x/@board.gridSize)
+		y: ~~(coord.y/@board.gridSize)
 
 	###### Constructor, button binders and bindBoardToc()
 
-	constructor: (@board) ->
-		@canvas = board.canvas
+	constructor: (@painter) ->
 
+	setBoard: (board) ->
+		@board = board
+		@canvas = board.canvas
+		
 		console.log "Attaching listeners to board:", #{board}
+		# Bind DOM events
 		@detectMouse()
 		@detectSpacebar()
 		@detectMousePos()
 		@detectCanvasClick
 		@detectCanvasClick()
 		@detectMouseMove()
+
+		# Bind buttons
 		@bindBoardToc()
 		@bindStopButton()
 		@bindClearButton()
+		@bindShowPanel()
+		@bindHideGrid()
+		@bindBuildCanvas()
 
 	bindBoardToc: ->
 		# Binds a 'toc' event from the Board, called each time Board.tic() is executed.
@@ -240,6 +249,35 @@ class EventDispatcher
 			@board.clearBoard()
 			@updateStateCount()
 
+	bindShowPanel: ->
+		$(".show-more").click (event) =>
+			if $('.config-panel').is(':hidden')
+				$('.config-panel').slideDown()
+				$(".show-more").find("h6").html('show less options')
+				$(".show-more").find("i").removeClass("icon-circle-arrow-down").addClass("icon-circle-arrow-up")
+				$(".grid-size").val(@board.gridSize)
+				console.log @board.gridSize
+			else
+				$('.config-panel').slideUp()
+				$(".show-more").find("h6").html('show more options')
+				$(".show-more").find("i").removeClass("icon-circle-arrow-up").addClass("icon-circle-arrow-down")
+
+	bindHideGrid: ->
+		$("button.hidegrid").click (event) =>
+			if $("button.hidegrid").hasClass "active"
+				$("canvas#grid").fadeIn()
+			else
+				$("canvas#grid").fadeOut()		
+
+	bindBuildCanvas: ->
+		$("button.buildcanvas").click (event) =>
+			particles = $(".initial-particles").val()
+			size = $(".grid-size").val()
+			fps = $(".refresh-rate").val()
+			console.log fps, particles, size
+			delete window.painter
+			@painter.buildBoard fps, size, particles
+
 			
 	#### General functions (multiple callers)
 
@@ -258,7 +296,7 @@ class EventDispatcher
 	#### DOM Binders
 
 	detectMouse: ->
-		window.msouseDown = false
+		window.mouseDown = false
 		$(document).mousedown (event) =>
 			window.mouseDown = true
 		$(document).mouseup (event) =>
@@ -282,6 +320,10 @@ class EventDispatcher
 
 	detectCanvasClick: ->
 		$(@canvas).mousedown (event) =>
+			console.log "oi1"
+			if not window.mouseOverCanvas
+				return
+			console.log "oi2"
 			coord = @_getGridPos event
 			if not _.isEqual coord, @lastHoveredSquare
 				console.log "Click at canvas fired at", coord
@@ -295,7 +337,7 @@ class EventDispatcher
 					@lastHoveredSquare = coord
 					@board.addSquare coord
 					console.log "Hovering board at square", coord
-			@lastHoveredSquare = coord
+				@lastHoveredSquare = coord
 
 
 class Painter
@@ -316,21 +358,21 @@ class Painter
 		context.lineTo x2, y2
 		context.stroke()
 	
-	drawGrid = (canvas, size) ->
+	drawGrid = (canvas, gridSize) ->
 		context = canvas.getContext "2d"
-		for icol in [0...canvas.width/size]
-			makeLine(context, size*icol, 0, size*icol, canvas.height, .1, 'grey')
-		for iline in [0...canvas.height/size]
-			makeLine(context, 0, size*iline, canvas.width, size*iline, .1, 'grey')
+		for icol in [0...canvas.width/gridSize]
+			makeLine(context, gridSize*icol, 0, gridSize*icol, canvas.height, .1, 'grey')
+		for iline in [0...canvas.height/gridSize]
+			makeLine(context, 0, gridSize*iline, canvas.width, gridSize*iline, .1, 'grey')
 
 	###### 
 
-	gridSize = 10
+	# Defaults
+	gridSize: 10
+	initialPop: 1000
+	fps: 100
 
 	constructor: ->
-		@buildCanvas()
-
-	buildCanvas: ->
 		@canvas =
 			grid:	document.createElement "canvas"
 			board:	document.createElement "canvas"
@@ -340,18 +382,24 @@ class Painter
 			elm.width 	= $(window).width() # window.innerWidth
 			elm.height 	= $(window).height() # window.innerHeight
 			$(elm).appendTo $(".wrapper")
-		drawGrid(@canvas.grid, gridSize)
+		drawGrid(@canvas.grid, @gridSize)
+		@buildBoard()
+
+	buildBoard: (@fps=@fps, @gridSize=@gridSize, @initialPop=@initialPop) ->
+		console.log "@board", @board
+		@board = new Board(@canvas.board, @gridSize, @initialPop)
+		@dispatcher = new EventDispatcher(@)
+		@dispatcher.setBoard(@board)
 
 	loop: ->
-		board = new Board(@canvas.board, gridSize)
-		new EventDispatcher(board)
-		console.log "Looping board:", board
+		console.log "Looping board:", board, "sync value", @_boardSync 
 		
 		window.setInterval =>
-			if window.mouseDown or window.canvasStop
+			# console.log @, @board, canvasStop, mouseDown, mouseOverCanvas
+			if window.canvasStop or window.mouseDown and window.mouseOverCanvas
 				return
-			board.tick()
-		, 10
+			@board.tick()
+		, 1000/@fps
 
 
 window.AnimateOnFrameRate = do ->
@@ -365,7 +413,6 @@ window.AnimateOnFrameRate = do ->
 		window.setTimeout callback, 1000/60
 
 window.onload = ->
-	painter = new Painter()
-	painter.buildCanvas()
-	painter.loop()
+	window.painter = new Painter(20, 100)
+	window.painter.loop()
 	return

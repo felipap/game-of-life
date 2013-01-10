@@ -90,16 +90,16 @@ Rules:
 
     Board.prototype.ALIVE = 1;
 
-    function Board(canvas, size, initPopulation) {
+    function Board(canvas, gridSize, initPopulation) {
       var _ref;
       this.canvas = canvas;
-      this.size = size != null ? size : 10;
+      this.gridSize = gridSize != null ? gridSize : 10;
       this.initPopulation = initPopulation != null ? initPopulation : null;
       this.toogleSquare = __bind(this.toogleSquare, this);
 
       this.context = this.canvas.getContext("2d");
-      this.WIDTH = ~~(this.canvas.width / this.size) + 1;
-      this.HEIGHT = ~~(this.canvas.height / this.size) + 1;
+      this.WIDTH = ~~(this.canvas.width / this.gridSize) + 1;
+      this.HEIGHT = ~~(this.canvas.height / this.gridSize) + 1;
       if ((_ref = this.initPopulation) == null) {
         this.initPopulation = this.WIDTH * this.HEIGHT * .5;
       }
@@ -141,15 +141,15 @@ Rules:
 
     Board.prototype.addSquare = function(coord) {
       this.boardState[coord.x][coord.y] = this.ALIVE;
-      return new GridSquare(this.size, coord).render(this.context);
+      return new GridSquare(this.gridSize, coord).render(this.context);
     };
 
     Board.prototype.toogleSquare = function(coord) {
       if (this.boardState[coord.x][coord.y]) {
-        new GridSquare(this.size, coord).clear(this.context);
+        new GridSquare(this.gridSize, coord).clear(this.context);
         return this.boardState[coord.x][coord.y] = this.DEAD;
       } else {
-        new GridSquare(this.size, coord).render(this.context);
+        new GridSquare(this.gridSize, coord).render(this.context);
         return this.boardState[coord.x][coord.y] = this.ALIVE;
       }
     };
@@ -165,12 +165,12 @@ Rules:
             for (y = _j = 0, _ref1 = newState[x].length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; y = 0 <= _ref1 ? ++_j : --_j) {
               if (newState[x][y] !== this.boardState[x][y]) {
                 if (!newState[x][y]) {
-                  _results1.push(new GridSquare(this.size, {
+                  _results1.push(new GridSquare(this.gridSize, {
                     x: x,
                     y: y
                   }).clear(this.context));
                 } else {
-                  _results1.push(new GridSquare(this.size, {
+                  _results1.push(new GridSquare(this.gridSize, {
                     x: x,
                     y: y
                   }).render(this.context));
@@ -298,13 +298,13 @@ Rules:
       var coord;
       coord = this._getMousePos(event);
       return {
-        x: ~~(coord.x / this.board.size),
-        y: ~~(coord.y / this.board.size)
+        x: ~~(coord.x / this.board.gridSize),
+        y: ~~(coord.y / this.board.gridSize)
       };
     };
 
-    function EventDispatcher(board) {
-      this.board = board;
+    function EventDispatcher(painter) {
+      this.painter = painter;
       this.unstopCanvas = __bind(this.unstopCanvas, this);
 
       this.stopCanvas = __bind(this.stopCanvas, this);
@@ -315,6 +315,10 @@ Rules:
 
       this._getMousePos = __bind(this._getMousePos, this);
 
+    }
+
+    EventDispatcher.prototype.setBoard = function(board) {
+      this.board = board;
       this.canvas = board.canvas;
       console.log("Attaching listeners to board:", this.detectMouse());
       this.detectSpacebar();
@@ -325,7 +329,10 @@ Rules:
       this.bindBoardToc();
       this.bindStopButton();
       this.bindClearButton();
-    }
+      this.bindShowPanel();
+      this.bindHideGrid();
+      return this.bindBuildCanvas();
+    };
 
     EventDispatcher.prototype.bindBoardToc = function() {
       var _this = this;
@@ -359,6 +366,47 @@ Rules:
       });
     };
 
+    EventDispatcher.prototype.bindShowPanel = function() {
+      var _this = this;
+      return $(".show-more").click(function(event) {
+        if ($('.config-panel').is(':hidden')) {
+          $('.config-panel').slideDown();
+          $(".show-more").find("h6").html('show less options');
+          $(".show-more").find("i").removeClass("icon-circle-arrow-down").addClass("icon-circle-arrow-up");
+          $(".grid-size").val(_this.board.gridSize);
+          return console.log(_this.board.gridSize);
+        } else {
+          $('.config-panel').slideUp();
+          $(".show-more").find("h6").html('show more options');
+          return $(".show-more").find("i").removeClass("icon-circle-arrow-up").addClass("icon-circle-arrow-down");
+        }
+      });
+    };
+
+    EventDispatcher.prototype.bindHideGrid = function() {
+      var _this = this;
+      return $("button.hidegrid").click(function(event) {
+        if ($("button.hidegrid").hasClass("active")) {
+          return $("canvas#grid").fadeIn();
+        } else {
+          return $("canvas#grid").fadeOut();
+        }
+      });
+    };
+
+    EventDispatcher.prototype.bindBuildCanvas = function() {
+      var _this = this;
+      return $("button.buildcanvas").click(function(event) {
+        var fps, particles, size;
+        particles = $(".initial-particles").val();
+        size = $(".grid-size").val();
+        fps = $(".refresh-rate").val();
+        console.log(fps, particles, size);
+        delete window.painter;
+        return _this.painter.buildBoard(fps, size, particles);
+      });
+    };
+
     EventDispatcher.prototype.updateStateCount = function() {
       return document.querySelector(".count").innerHTML = window.stateCount;
     };
@@ -375,7 +423,7 @@ Rules:
 
     EventDispatcher.prototype.detectMouse = function() {
       var _this = this;
-      window.msouseDown = false;
+      window.mouseDown = false;
       $(document).mousedown(function(event) {
         return window.mouseDown = true;
       });
@@ -412,6 +460,11 @@ Rules:
       var _this = this;
       return $(this.canvas).mousedown(function(event) {
         var coord;
+        console.log("oi1");
+        if (!window.mouseOverCanvas) {
+          return;
+        }
+        console.log("oi2");
         coord = _this._getGridPos(event);
         if (!_.isEqual(coord, _this.lastHoveredSquare)) {
           console.log("Click at canvas fired at", coord);
@@ -431,8 +484,8 @@ Rules:
             _this.board.addSquare(coord);
             console.log("Hovering board at square", coord);
           }
+          return _this.lastHoveredSquare = coord;
         }
-        return _this.lastHoveredSquare = coord;
       });
     };
 
@@ -441,7 +494,7 @@ Rules:
   })();
 
   Painter = (function() {
-    var drawDot, drawGrid, gridSize, makeLine;
+    var drawDot, drawGrid, makeLine;
 
     drawDot = function(context, x, y, color) {
       if (color == null) {
@@ -468,26 +521,26 @@ Rules:
       return context.stroke();
     };
 
-    drawGrid = function(canvas, size) {
+    drawGrid = function(canvas, gridSize) {
       var context, icol, iline, _i, _j, _ref, _ref1, _results;
       context = canvas.getContext("2d");
-      for (icol = _i = 0, _ref = canvas.width / size; 0 <= _ref ? _i < _ref : _i > _ref; icol = 0 <= _ref ? ++_i : --_i) {
-        makeLine(context, size * icol, 0, size * icol, canvas.height, .1, 'grey');
+      for (icol = _i = 0, _ref = canvas.width / gridSize; 0 <= _ref ? _i < _ref : _i > _ref; icol = 0 <= _ref ? ++_i : --_i) {
+        makeLine(context, gridSize * icol, 0, gridSize * icol, canvas.height, .1, 'grey');
       }
       _results = [];
-      for (iline = _j = 0, _ref1 = canvas.height / size; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; iline = 0 <= _ref1 ? ++_j : --_j) {
-        _results.push(makeLine(context, 0, size * iline, canvas.width, size * iline, .1, 'grey'));
+      for (iline = _j = 0, _ref1 = canvas.height / gridSize; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; iline = 0 <= _ref1 ? ++_j : --_j) {
+        _results.push(makeLine(context, 0, gridSize * iline, canvas.width, gridSize * iline, .1, 'grey'));
       }
       return _results;
     };
 
-    gridSize = 10;
+    Painter.prototype.gridSize = 10;
+
+    Painter.prototype.initialPop = 1000;
+
+    Painter.prototype.fps = 100;
 
     function Painter() {
-      this.buildCanvas();
-    }
-
-    Painter.prototype.buildCanvas = function() {
       var elm, id, _ref;
       this.canvas = {
         grid: document.createElement("canvas"),
@@ -501,21 +554,29 @@ Rules:
         elm.height = $(window).height();
         $(elm).appendTo($(".wrapper"));
       }
-      return drawGrid(this.canvas.grid, gridSize);
+      drawGrid(this.canvas.grid, this.gridSize);
+      this.buildBoard();
+    }
+
+    Painter.prototype.buildBoard = function(fps, gridSize, initialPop) {
+      this.fps = fps != null ? fps : this.fps;
+      this.gridSize = gridSize != null ? gridSize : this.gridSize;
+      this.initialPop = initialPop != null ? initialPop : this.initialPop;
+      console.log("@board", this.board);
+      this.board = new Board(this.canvas.board, this.gridSize, this.initialPop);
+      this.dispatcher = new EventDispatcher(this);
+      return this.dispatcher.setBoard(this.board);
     };
 
     Painter.prototype.loop = function() {
-      var board,
-        _this = this;
-      board = new Board(this.canvas.board, gridSize);
-      new EventDispatcher(board);
-      console.log("Looping board:", board);
+      var _this = this;
+      console.log("Looping board:", board, "sync value", this._boardSync);
       return window.setInterval(function() {
-        if (window.mouseDown || window.canvasStop) {
+        if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
           return;
         }
-        return board.tick();
-      }, 10);
+        return _this.board.tick();
+      }, 1000 / this.fps);
     };
 
     return Painter;
@@ -529,10 +590,8 @@ Rules:
   })();
 
   window.onload = function() {
-    var painter;
-    painter = new Painter();
-    painter.buildCanvas();
-    painter.loop();
+    window.painter = new Painter(20, 100);
+    window.painter.loop();
   };
 
 }).call(this);
