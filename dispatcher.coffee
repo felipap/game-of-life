@@ -118,10 +118,8 @@ class window.EventDispatcher
 	detectMouseOverCanvas: ->
 		window.mouseOverCanvas = false
 		$(@canvas).mouseover (event) ->
-			console.log "entetr"
 			window.mouseOverCanvas = true
 		$(@canvas).mouseout (event) ->
-			console.log "leave"
 			window.mouseOuverCanvas = false
 
 	detectCanvasClick: ->

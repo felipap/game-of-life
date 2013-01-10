@@ -12,7 +12,6 @@
 # 4. Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
 #! ToDos
-## Add fps counter
 ## Change gridsquare manipulation
 
 class Painter
@@ -60,7 +59,7 @@ class Painter
 		fpsOut = document.getElementById 'fps'
 		setInterval =>
 			fpsOut.innerHTML = window.fps.toFixed(1)
-		, 1000
+		, 500
 
 	resetFpsCounter = ->
 		window.fps = 0
@@ -100,24 +99,21 @@ class Painter
 		@board.resetBoard(@initialPop, @gridSize)
 
 	_loop: ->
+		return if window.canvasStop or
+			window.mouseDown and window.mouseOverCanvas
+		@board.tic()
+
+		# Synchronise window.fps
+		thisFrameFPS = 1000 / ((now=new Date) - lastUpdate)
+		window.fps += (thisFrameFPS - window.fps) / 1;
+		lastUpdate = now * 1 - 1
+	
 		window.setTimeout =>
 			@_loop()
 		, 1000/@fps
 
-		# console.log @, @board, canvasStop, mouseDown, mouseOverCanvas
-		return if window.canvasStop or window.mouseDown and window.mouseOverCanvas
-
-		thisFrameFPS = 1000 / ((now=new Date) - lastUpdate)
-		console.log thisFrameFPS, lastUpdate
-		window.fps += (thisFrameFPS - window.fps) / 10;
-		lastUpdate = now * 1 - 1
-
-		console.log "tic"
-		@board.tic()
-	
 	loop: ->
 		addFpsCounter()
-
 		console.log "Start looping board" # , @board, "with painter", @ 
 		@_loop()
 
@@ -137,9 +133,7 @@ window.AnimateOnFrameRate = do ->
 
 window.onload = ->
 	# Start a painter and loop.
-
 	window.painter = new Painter(20, 100)
 	window.painter.loop()
-	addFpsCounter()
 
 	return

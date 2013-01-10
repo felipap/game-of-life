@@ -149,11 +149,9 @@
     EventDispatcher.prototype.detectMouseOverCanvas = function() {
       window.mouseOverCanvas = false;
       $(this.canvas).mouseover(function(event) {
-        console.log("entetr");
         return window.mouseOverCanvas = true;
       });
       return $(this.canvas).mouseout(function(event) {
-        console.log("leave");
         return window.mouseOuverCanvas = false;
       });
     };

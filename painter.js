@@ -66,7 +66,7 @@
       fpsOut = document.getElementById('fps');
       return setInterval(function() {
         return fpsOut.innerHTML = window.fps.toFixed(1);
-      }, 1000);
+      }, 500);
     };
 
     resetFpsCounter = function() {
@@ -113,18 +113,16 @@
     Painter.prototype._loop = function() {
       var now, thisFrameFPS,
         _this = this;
-      window.setTimeout(function() {
-        return _this._loop();
-      }, 1000 / this.fps);
       if (window.canvasStop || window.mouseDown && window.mouseOverCanvas) {
         return;
       }
+      this.board.tic();
       thisFrameFPS = 1000 / ((now = new Date) - lastUpdate);
-      console.log(thisFrameFPS, lastUpdate);
-      window.fps += (thisFrameFPS - window.fps) / 10;
+      window.fps += (thisFrameFPS - window.fps) / 1;
       lastUpdate = now * 1 - 1;
-      console.log("tic");
-      return this.board.tic();
+      return window.setTimeout(function() {
+        return _this._loop();
+      }, 1000 / this.fps);
     };
 
     Painter.prototype.loop = function() {
@@ -146,7 +144,6 @@
   window.onload = function() {
     window.painter = new Painter(20, 100);
     window.painter.loop();
-    addFpsCounter();
   };
 
 }).call(this);

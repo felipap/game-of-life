@@ -1,5 +1,6 @@
 # board.coffee for https://github.com/f03lipe/game-of-life
 
+
 rainbow = (numOfSteps, step) ->
 	# from http://stackoverflow.com/a/7419630/396050
     h = step / numOfSteps;
@@ -22,18 +23,12 @@ getRandColor = ->
 
 ######
 
-class GridSquare
-	
-	constructor: (@size, @c) ->
-	
-	render: (context) ->
-		# context.fillStyle = getRandColor()
-		context.fillStyle = rainbow(@c.x+@c.y, 10)
-		context.fillRect @size*@c.x, @size*@c.y, @size, @size
+fillGridSquare = (context, size, coord) ->
+	context.fillStyle = rainbow(coord.x+coord.y, 10)
+	context.fillRect size*coord.x, size*coord.y, size, size
 
-	clear: (context) ->
-		context.clearRect @size*@c.x, @size*@c.y, @size, @size
-
+clearGridSquare = (context, size, coord) ->
+	context.clearRect size*coord.x, size*coord.y, size, size
 
 class window.Board
 
@@ -72,14 +67,14 @@ class window.Board
 
 	addSquare: (coord) ->
 		@boardState[coord.x][coord.y] = @ALIVE
-		new GridSquare(@gridSize, coord).render(@context)
+		clearGridSquare(@context, @gridSize, coord)
 
 	toogleSquare: (coord) =>
 		if @boardState[coord.x][coord.y]
-			new GridSquare(@gridSize, coord).clear(@context)
+			clearGridSquare(@context, @gridSize, coord)
 			@boardState[coord.x][coord.y] = @DEAD
 		else
-			new GridSquare(@gridSize, coord).render(@context)
+			fillGridSquare(@context, @gridSize, coord)
 			@boardState[coord.x][coord.y] = @ALIVE
 
 	###### Main Engine
@@ -89,9 +84,9 @@ class window.Board
 		for x in [0...newState.length] when not _.isEqual newState[x], @boardState[x] # Prevent loop in non-changed strips.
 			for y in [0...newState[x].length] when newState[x][y] != @boardState[x][y]
 				if not newState[x][y]
-					new GridSquare(@gridSize, {x:x, y:y}).clear(@context)
+					clearGridSquare(@context, @gridSize, {x:x, y:y})
 				else
-					new GridSquare(@gridSize, {x:x, y:y}).render(@context)
+					fillGridSquare(@context, @gridSize, {x:x, y:y})
 
 	tic: ->
 		# Create a copy @boardState to boardState.
