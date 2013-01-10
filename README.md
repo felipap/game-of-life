@@ -3,7 +3,7 @@ game-of-life
 
 A CoffeeScript implementation for HTML5's canvas of John Conway's Game of Life.
 
-Compile with `coffee --output js --compile coffee/\*.coffee/`.
+Compile with `coffee --output js --compile coffee/*.coffee/`.
 
 Currently using jQuery, Bootstrap and Backbone.js.
 
